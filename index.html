@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>BMI & PFC 簡易計算</title>
+<style>
+  body{font-family:system-ui, sans-serif; max-width:720px; margin:24px auto; padding:0 12px;}
+  .card{border:1px solid #ddd; border-radius:12px; padding:16px; margin:12px 0;}
+  label{display:block; margin:8px 0 4px;}
+  input{width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;}
+  button{padding:12px 16px; border:0; border-radius:10px; cursor:pointer;}
+  .primary{background:#0ea5e9; color:#fff;}
+  .muted{color:#666; font-size:14px;}
+  .warn{background:#fff7e6; border:1px solid #ffd28a; padding:10px; border-radius:8px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+</style>
+<body>
+  <h1>BMI & PFC 簡易計算</h1>
+
+  <div class="card">
+    <div class="grid">
+      <div>
+        <label>身長 (cm)</label>
+        <input id="height" type="number" min="80" max="250" step="0.1" placeholder="例) 160" />
+      </div>
+      <div>
+        <label>体重 (kg)</label>
+        <input id="weight" type="number" min="20" max="300" step="0.1" placeholder="例) 55" />
+      </div>
+    </div>
+    <label>基礎代謝 (kcal) <span class="muted">※手入力でOK</span></label>
+    <input id="bmr" type="number" min="500" max="4000" step="1" placeholder="例) 1300" />
+
+    <p class="muted">※ 一旦「基礎代謝＋500kcal」を目安に総摂取カロリーを計算します。</p>
+
+    <button class="primary" id="calc">計算する</button>
+  </div>
+
+  <div class="card" id="result" style="display:none">
+    <h2>結果</h2>
+    <p id="bmiLine"></p>
+    <div id="bmiWarn" class="warn" style="display:none">
+      WHOや日本の厚労省でも <strong>BMI &lt; 18.5</strong> は「低体重＝健康リスク」とされるためおすすめしません。
+    </div>
+    <hr/>
+    <p id="targetCal"></p>
+    <h3>PFC配分（P15% / F25% / C60%）</h3>
+    <ul id="pfcLines"></ul>
+    <p class="muted">係数: P=4kcal/g, F=9kcal/g, C=3.75kcal/g</p>
+  </div>
+
+<script>
+function round(n, d=1){ const p=Math.pow(10,d); return Math.round(n*p)/p; }
+
+document.getElementById('calc').addEventListener('click', () => {
+  const h = parseFloat(document.getElementById('height').value);
+  const w = parseFloat(document.getElementById('weight').value);
+  const bmr = parseFloat(document.getElementById('bmr').value);
+  if(!(h>0 && w>0 && bmr>0)){ alert('身長・体重・基礎代謝を入力してください'); return; }
+
+  const heightM = h/100;
+  const bmi = w / (heightM*heightM);
+
+  // 総摂取カロリー：基礎代謝 + 500kcal
+  const total = bmr + 500;
+
+  // PFC（%）
+  const Ppct=0.15, Fpct=0.25, Cpct=0.60;
+
+  // g換算（P=4, F=9, C=3.75）
+  const Pkcal = total*Ppct, Fkcal = total*Fpct, Ckcal = total*Cpct;
+  const Pg = Pkcal/4, Fg = Fkcal/9, Cg = Ckcal/3.75;
+
+  // 表示
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('bmiLine').textContent = `BMI: ${round(bmi,2)}`;
+  document.getElementById('bmiWarn').style.display = (bmi < 18.5) ? 'block' : 'none';
+  document.getElementById('targetCal').textContent = `目安の総摂取カロリー: 約 ${Math.round(total)} kcal/日`;
+
+  const list = document.getElementById('pfcLines');
+  list.innerHTML = '';
+  const items = [
+    `P（たんぱく質）: ${Math.round(Pkcal)} kcal / ${round(Pg,1)} g`,
+    `F（脂質）: ${Math.round(Fkcal)} kcal / ${round(Fg,1)} g`,
+    `C（炭水化物）: ${Math.round(Ckcal)} kcal / ${round(Cg,1)} g`,
+  ];
+  items.forEach(t => { const li=document.createElement('li'); li.textContent=t; list.appendChild(li); });
+});
+</script>
+</body>
+</html>
